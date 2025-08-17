@@ -1,0 +1,1343 @@
+---
+title: Introduction
+subtitle: Welcome to the ElevenLabs API reference.
+hide-feedback: true
+---
+
+## Installation
+
+You can interact with the API through HTTP or Websocket requests from any language, via our official Python bindings or our official Node.js libraries.
+
+To install the official Python bindings, run the following command:
+
+```bash
+pip install elevenlabs
+```
+
+To install the official Node.js library, run the following command in your Node.js project directory:
+
+```bash
+npm install @elevenlabs/elevenlabs-js
+```
+
+<div id="overview-wave">
+  <ElevenLabsWaveform color="gray" className="h-[500px]" />
+</div>
+
+---
+title: Authentication
+hide-feedback: true
+---
+
+## API Keys
+
+The ElevenLabs API uses API keys for authentication. Every request to the API must include your API key, used to authenticate your requests and track usage quota.
+
+Each API key can be scoped to one of the following:
+
+1. **Scope restriction:** Set access restrictions by limiting which API endpoints the key can access.
+2. **Credit quota:** Define custom credit limits to control usage.
+
+**Remember that your API key is a secret.** Do not share it with others or expose it in any client-side code (browsers, apps).
+
+All API requests should include your API key in an `xi-api-key` HTTP header as follows:
+
+```bash
+xi-api-key: ELEVENLABS_API_KEY
+```
+
+### Making requests
+
+You can paste the command below into your terminal to run your first API request. Make sure to replace `$ELEVENLABS_API_KEY` with your secret API key.
+
+```bash
+curl 'https://api.elevenlabs.io/v1/models' \
+  -H 'Content-Type: application/json' \
+  -H 'xi-api-key: $ELEVENLABS_API_KEY'
+```
+
+Example with the `elevenlabs` Python package:
+
+```python
+from elevenlabs.client import ElevenLabs
+
+elevenlabs = ElevenLabs(
+  api_key='YOUR_API_KEY',
+)
+```
+
+Example with the `elevenlabs` Node.js package:
+
+```javascript
+import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
+
+const elevenlabs = new ElevenLabsClient({
+  apiKey: 'YOUR_API_KEY',
+});
+```
+
+---
+title: Streaming
+---
+
+The ElevenLabs API supports real-time audio streaming for select endpoints, returning raw audio bytes (e.g., MP3 data) directly over HTTP using chunked transfer encoding. This allows clients to process or play audio incrementally as it is generated.
+
+Our official [Node](https://github.com/elevenlabs/elevenlabs-js) and [Python](https://github.com/elevenlabs/elevenlabs-python) libraries include utilities to simplify handling this continuous audio stream.
+
+Streaming is supported for the [Text to Speech API](/docs/api-reference/streaming), [Voice Changer API](/docs/api-reference/speech-to-speech-streaming) & [Audio Isolation API](/docs/api-reference/audio-isolation-stream). This section focuses on how streaming works for requests made to the Text to Speech API.
+
+In Python, a streaming request looks like:
+
+```python
+from elevenlabs import stream
+from elevenlabs.client import ElevenLabs
+
+elevenlabs = ElevenLabs()
+
+audio_stream = elevenlabs.text_to_speech.stream(
+    text="This is a test",
+    voice_id="JBFqnCBsd6RMkjVDRZzb",
+    model_id="eleven_multilingual_v2"
+)
+
+# option 1: play the streamed audio locally
+stream(audio_stream)
+
+# option 2: process the audio bytes manually
+for chunk in audio_stream:
+    if isinstance(chunk, bytes):
+        print(chunk)
+```
+
+In Node / Typescript, a streaming request looks like:
+
+```javascript maxLines=0
+import { ElevenLabsClient, stream } from '@elevenlabs/elevenlabs-js';
+import { Readable } from 'stream';
+
+const elevenlabs = new ElevenLabsClient();
+
+async function main() {
+  const audioStream = await elevenlabs.textToSpeech.stream('JBFqnCBsd6RMkjVDRZzb', {
+    text: 'This is a test',
+    modelId: 'eleven_multilingual_v2',
+  });
+
+  // option 1: play the streamed audio locally
+  await stream(Readable.from(audioStream));
+
+  // option 2: process the audio manually
+  for await (const chunk of audioStream) {
+    console.log(chunk);
+  }
+}
+
+main();
+```
+
+ENDPOINTS
+Text to Speech
+Create speech
+POST
+
+https://api.elevenlabs.io
+/v1/text-to-speech/:voice_id
+POST
+/v1/text-to-speech/:voice_id
+
+
+Python
+
+from elevenlabs import ElevenLabs
+client = ElevenLabs(
+    api_key="YOUR_API_KEY",
+)
+client.text_to_speech.convert(
+    voice_id="JBFqnCBsd6RMkjVDRZzb",
+    output_format="mp3_44100_128",
+    text="The first move is what sets everything in motion.",
+    model_id="eleven_multilingual_v2",
+)
+Try it
+Converts text into speech using a voice of your choice and returns audio.
+Path parameters
+
+voice_id
+string
+Required
+ID of the voice to be used. Use the Get voices endpoint list all the available voices.
+Headers
+
+xi-api-key
+string
+Required
+Query parameters
+
+enable_logging
+boolean
+Optional
+Defaults to true
+When enable_logging is set to false zero retention mode will be used for the request. This will mean history features are unavailable for this request, including request stitching. Zero retention mode may only be used by enterprise customers.
+optimize_streaming_latency
+integer or null
+Optional
+Deprecated
+You can turn on latency optimizations at some cost of quality. The best possible final latency varies by model. Possible values: 0 - default mode (no latency optimizations) 1 - normal latency optimizations (about 50% of possible latency improvement of option 3) 2 - strong latency optimizations (about 75% of possible latency improvement of option 3) 3 - max latency optimizations 4 - max latency optimizations, but also with text normalizer turned off for even more latency savings (best latency, but can mispronounce eg numbers and dates).
+
+Defaults to None.
+output_format
+enum
+Optional
+Defaults to mp3_44100_128
+Output format of the generated audio. Formatted as codec_sample_rate_bitrate. So an mp3 with 22.05kHz sample rate at 32kbs is represented as mp3_22050_32. MP3 with 192kbps bitrate requires you to be subscribed to Creator tier or above. PCM with 44.1kHz sample rate requires you to be subscribed to Pro tier or above. Note that the μ-law format (sometimes written mu-law, often approximated as u-law) is commonly used for Twilio audio inputs.
+
+Show 19 enum values
+Request
+
+This endpoint expects an object.
+text
+string
+Required
+The text that will get converted into speech.
+model_id
+string
+Optional
+Defaults to eleven_multilingual_v2
+Identifier of the model that will be used, you can query them using GET /v1/models. The model needs to have support for text to speech, you can check this using the can_do_text_to_speech property.
+language_code
+string or null
+Optional
+Language code (ISO 639-1) used to enforce a language for the model. Currently only Turbo v2.5 and Flash v2.5 support language enforcement. For other models, an error will be returned if language code is provided.
+voice_settings
+object or null
+Optional
+Voice settings overriding stored settings for the given voice. They are applied only on the given request.
+
+Show 5 properties
+pronunciation_dictionary_locators
+list of objects or null
+Optional
+A list of pronunciation dictionary locators (id, version_id) to be applied to the text. They will be applied in order. You may have up to 3 locators per request
+
+Show 2 properties
+seed
+integer or null
+Optional
+If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. Determinism is not guaranteed. Must be integer between 0 and 4294967295.
+previous_text
+string or null
+Optional
+The text that came before the text of the current request. Can be used to improve the speech's continuity when concatenating together multiple generations or to influence the speech's continuity in the current generation.
+next_text
+string or null
+Optional
+The text that comes after the text of the current request. Can be used to improve the speech's continuity when concatenating together multiple generations or to influence the speech's continuity in the current generation.
+previous_request_ids
+list of strings or null
+Optional
+A list of request_id of the samples that were generated before this generation. Can be used to improve the speech’s continuity when splitting up a large task into multiple requests. The results will be best when the same model is used across the generations. In case both previous_text and previous_request_ids is send, previous_text will be ignored. A maximum of 3 request_ids can be send.
+next_request_ids
+list of strings or null
+Optional
+A list of request_id of the samples that come after this generation. next_request_ids is especially useful for maintaining the speech’s continuity when regenerating a sample that has had some audio quality issues. For example, if you have generated 3 speech clips, and you want to improve clip 2, passing the request id of clip 3 as a next_request_id (and that of clip 1 as a previous_request_id) will help maintain natural flow in the combined speech. The results will be best when the same model is used across the generations. In case both next_text and next_request_ids is send, next_text will be ignored. A maximum of 3 request_ids can be send.
+apply_text_normalization
+enum
+Optional
+Defaults to auto
+This parameter controls text normalization with three modes: ‘auto’, ‘on’, and ‘off’. When set to ‘auto’, the system will automatically decide whether to apply text normalization (e.g., spelling out numbers). With ‘on’, text normalization will always be applied, while with ‘off’, it will be skipped. Cannot be turned on for ‘eleven_turbo_v2_5’ or ‘eleven_flash_v2_5’ models.
+Allowed values:
+auto
+on
+off
+apply_language_text_normalization
+boolean
+Optional
+Defaults to false
+This parameter controls language text normalization. This helps with proper pronunciation of text in some supported languages. WARNING: This parameter can heavily increase the latency of the request. Currently only supported for Japanese.
+use_pvc_as_ivc
+boolean
+Optional
+Defaults to false
+Deprecated
+If true, we won't use PVC version of the voice for the generation but the IVC version. This is a temporary workaround for higher latency in PVC versions.
+Response
+
+The generated audio file
+Errors
+
+
+422
+Unprocessable Entity Error
+Was this page helpful?
+Yes
+No
+Previous
+Create speech with timing
+Next
+Built with
+
+Create speech with timing
+POST
+
+https://api.elevenlabs.io
+/v1/text-to-speech/:voice_id/with-timestamps
+POST
+/v1/text-to-speech/:voice_id/with-timestamps
+
+
+Python
+
+from elevenlabs import ElevenLabs
+client = ElevenLabs(
+    api_key="YOUR_API_KEY",
+)
+client.text_to_speech.convert_with_timestamps(
+    voice_id="21m00Tcm4TlvDq8ikWAM",
+    text="This is a test for the API of ElevenLabs.",
+)
+Try it
+
+200
+Successful
+
+{
+  "audio_base64": "base64_encoded_audio_string",
+  "alignment": {
+    "characters": [
+      "H",
+      "e",
+      "l",
+      "l",
+      "o"
+    ],
+    "character_start_times_seconds": [
+      0,
+      0.1,
+      0.2,
+      0.3,
+      0.4
+    ],
+    "character_end_times_seconds": [
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5
+    ]
+  },
+  "normalized_alignment": {
+    "characters": [
+      "H",
+      "e",
+      "l",
+      "l",
+      "o"
+    ],
+    "character_start_times_seconds": [
+      0,
+      0.1,
+      0.2,
+      0.3,
+      0.4
+    ],
+    "character_end_times_seconds": [
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5
+    ]
+  }
+}
+Generate speech from text with precise character-level timing information for audio-text synchronization.
+Path parameters
+
+voice_id
+string
+Required
+Voice ID to be used, you can use https://api.elevenlabs.io/v1/voices to list all the available voices.
+Headers
+
+xi-api-key
+string
+Required
+Query parameters
+
+enable_logging
+boolean
+Optional
+Defaults to true
+When enable_logging is set to false zero retention mode will be used for the request. This will mean history features are unavailable for this request, including request stitching. Zero retention mode may only be used by enterprise customers.
+optimize_streaming_latency
+integer or null
+Optional
+Deprecated
+You can turn on latency optimizations at some cost of quality. The best possible final latency varies by model. Possible values: 0 - default mode (no latency optimizations) 1 - normal latency optimizations (about 50% of possible latency improvement of option 3) 2 - strong latency optimizations (about 75% of possible latency improvement of option 3) 3 - max latency optimizations 4 - max latency optimizations, but also with text normalizer turned off for even more latency savings (best latency, but can mispronounce eg numbers and dates).
+
+Defaults to None.
+output_format
+enum
+Optional
+Defaults to mp3_44100_128
+Output format of the generated audio. Formatted as codec_sample_rate_bitrate. So an mp3 with 22.05kHz sample rate at 32kbs is represented as mp3_22050_32. MP3 with 192kbps bitrate requires you to be subscribed to Creator tier or above. PCM with 44.1kHz sample rate requires you to be subscribed to Pro tier or above. Note that the μ-law format (sometimes written mu-law, often approximated as u-law) is commonly used for Twilio audio inputs.
+
+Show 19 enum values
+Request
+
+This endpoint expects an object.
+text
+string
+Required
+The text that will get converted into speech.
+model_id
+string
+Optional
+Defaults to eleven_multilingual_v2
+Identifier of the model that will be used, you can query them using GET /v1/models. The model needs to have support for text to speech, you can check this using the can_do_text_to_speech property.
+language_code
+string or null
+Optional
+Language code (ISO 639-1) used to enforce a language for the model. Currently only Turbo v2.5 and Flash v2.5 support language enforcement. For other models, an error will be returned if language code is provided.
+voice_settings
+object or null
+Optional
+Voice settings overriding stored settings for the given voice. They are applied only on the given request.
+
+Show 5 properties
+pronunciation_dictionary_locators
+list of objects
+Optional
+A list of pronunciation dictionary locators (id, version_id) to be applied to the text. They will be applied in order. You may have up to 3 locators per request
+
+Show 2 properties
+seed
+integer or null
+Optional
+If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. Determinism is not guaranteed. Must be integer between 0 and 4294967295.
+previous_text
+string or null
+Optional
+The text that came before the text of the current request. Can be used to improve the speech's continuity when concatenating together multiple generations or to influence the speech's continuity in the current generation.
+next_text
+string or null
+Optional
+The text that comes after the text of the current request. Can be used to improve the speech's continuity when concatenating together multiple generations or to influence the speech's continuity in the current generation.
+previous_request_ids
+list of strings
+Optional
+A list of request_id of the samples that were generated before this generation. Can be used to improve the speech’s continuity when splitting up a large task into multiple requests. The results will be best when the same model is used across the generations. In case both previous_text and previous_request_ids is send, previous_text will be ignored. A maximum of 3 request_ids can be send.
+next_request_ids
+list of strings
+Optional
+A list of request_id of the samples that come after this generation. next_request_ids is especially useful for maintaining the speech’s continuity when regenerating a sample that has had some audio quality issues. For example, if you have generated 3 speech clips, and you want to improve clip 2, passing the request id of clip 3 as a next_request_id (and that of clip 1 as a previous_request_id) will help maintain natural flow in the combined speech. The results will be best when the same model is used across the generations. In case both next_text and next_request_ids is send, next_text will be ignored. A maximum of 3 request_ids can be send.
+apply_text_normalization
+enum
+Optional
+Defaults to auto
+This parameter controls text normalization with three modes: ‘auto’, ‘on’, and ‘off’. When set to ‘auto’, the system will automatically decide whether to apply text normalization (e.g., spelling out numbers). With ‘on’, text normalization will always be applied, while with ‘off’, it will be skipped. Cannot be turned on for ‘eleven_turbo_v2_5’ or ‘eleven_flash_v2_5’ models.
+Allowed values:
+auto
+on
+off
+apply_language_text_normalization
+boolean
+Optional
+Defaults to false
+This parameter controls language text normalization. This helps with proper pronunciation of text in some supported languages. WARNING: This parameter can heavily increase the latency of the request. Currently only supported for Japanese.
+use_pvc_as_ivc
+boolean
+Optional
+Defaults to false
+Deprecated
+If true, we won't use PVC version of the voice for the generation but the IVC version. This is a temporary workaround for higher latency in PVC versions.
+Response
+
+Successful Response
+audio_base64
+string
+Base64 encoded audio data
+alignment
+object or null
+Timestamp information for each character in the original text
+
+Show 3 properties
+normalized_alignment
+object or null
+Timestamp information for each character in the normalized text
+
+Show 3 properties
+Errors
+
+
+422
+Unprocessable Entity Error
+Was this page helpful?
+Yes
+No
+Previous
+Stream speech
+Next
+Built with
+
+Stream speech
+POST
+
+https://api.elevenlabs.io
+/v1/text-to-speech/:voice_id/stream
+POST
+/v1/text-to-speech/:voice_id/stream
+
+
+Python
+
+from elevenlabs import ElevenLabs
+client = ElevenLabs(
+    api_key="YOUR_API_KEY",
+)
+client.text_to_speech.stream(
+    voice_id="JBFqnCBsd6RMkjVDRZzb",
+    output_format="mp3_44100_128",
+    text="The first move is what sets everything in motion.",
+    model_id="eleven_multilingual_v2",
+)
+Try it
+Converts text into speech using a voice of your choice and returns audio as an audio stream.
+Path parameters
+
+voice_id
+string
+Required
+ID of the voice to be used. Use the Get voices endpoint list all the available voices.
+Headers
+
+xi-api-key
+string
+Required
+Query parameters
+
+enable_logging
+boolean
+Optional
+Defaults to true
+When enable_logging is set to false zero retention mode will be used for the request. This will mean history features are unavailable for this request, including request stitching. Zero retention mode may only be used by enterprise customers.
+optimize_streaming_latency
+integer or null
+Optional
+Deprecated
+You can turn on latency optimizations at some cost of quality. The best possible final latency varies by model. Possible values: 0 - default mode (no latency optimizations) 1 - normal latency optimizations (about 50% of possible latency improvement of option 3) 2 - strong latency optimizations (about 75% of possible latency improvement of option 3) 3 - max latency optimizations 4 - max latency optimizations, but also with text normalizer turned off for even more latency savings (best latency, but can mispronounce eg numbers and dates).
+
+Defaults to None.
+output_format
+enum
+Optional
+Defaults to mp3_44100_128
+Output format of the generated audio. Formatted as codec_sample_rate_bitrate. So an mp3 with 22.05kHz sample rate at 32kbs is represented as mp3_22050_32. MP3 with 192kbps bitrate requires you to be subscribed to Creator tier or above. PCM with 44.1kHz sample rate requires you to be subscribed to Pro tier or above. Note that the μ-law format (sometimes written mu-law, often approximated as u-law) is commonly used for Twilio audio inputs.
+
+Show 19 enum values
+Request
+
+This endpoint expects an object.
+text
+string
+Required
+The text that will get converted into speech.
+model_id
+string
+Optional
+Defaults to eleven_multilingual_v2
+Identifier of the model that will be used, you can query them using GET /v1/models. The model needs to have support for text to speech, you can check this using the can_do_text_to_speech property.
+language_code
+string or null
+Optional
+Language code (ISO 639-1) used to enforce a language for the model. Currently only Turbo v2.5 and Flash v2.5 support language enforcement. For other models, an error will be returned if language code is provided.
+voice_settings
+object or null
+Optional
+Voice settings overriding stored settings for the given voice. They are applied only on the given request.
+
+Show 5 properties
+pronunciation_dictionary_locators
+list of objects or null
+Optional
+A list of pronunciation dictionary locators (id, version_id) to be applied to the text. They will be applied in order. You may have up to 3 locators per request
+
+Show 2 properties
+seed
+integer or null
+Optional
+If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. Determinism is not guaranteed. Must be integer between 0 and 4294967295.
+previous_text
+string or null
+Optional
+The text that came before the text of the current request. Can be used to improve the speech's continuity when concatenating together multiple generations or to influence the speech's continuity in the current generation.
+next_text
+string or null
+Optional
+The text that comes after the text of the current request. Can be used to improve the speech's continuity when concatenating together multiple generations or to influence the speech's continuity in the current generation.
+previous_request_ids
+list of strings or null
+Optional
+A list of request_id of the samples that were generated before this generation. Can be used to improve the speech’s continuity when splitting up a large task into multiple requests. The results will be best when the same model is used across the generations. In case both previous_text and previous_request_ids is send, previous_text will be ignored. A maximum of 3 request_ids can be send.
+next_request_ids
+list of strings or null
+Optional
+A list of request_id of the samples that come after this generation. next_request_ids is especially useful for maintaining the speech’s continuity when regenerating a sample that has had some audio quality issues. For example, if you have generated 3 speech clips, and you want to improve clip 2, passing the request id of clip 3 as a next_request_id (and that of clip 1 as a previous_request_id) will help maintain natural flow in the combined speech. The results will be best when the same model is used across the generations. In case both next_text and next_request_ids is send, next_text will be ignored. A maximum of 3 request_ids can be send.
+apply_text_normalization
+enum
+Optional
+Defaults to auto
+This parameter controls text normalization with three modes: ‘auto’, ‘on’, and ‘off’. When set to ‘auto’, the system will automatically decide whether to apply text normalization (e.g., spelling out numbers). With ‘on’, text normalization will always be applied, while with ‘off’, it will be skipped. Cannot be turned on for ‘eleven_turbo_v2_5’ or ‘eleven_flash_v2_5’ models.
+Allowed values:
+auto
+on
+off
+apply_language_text_normalization
+boolean
+Optional
+Defaults to false
+This parameter controls language text normalization. This helps with proper pronunciation of text in some supported languages. WARNING: This parameter can heavily increase the latency of the request. Currently only supported for Japanese.
+use_pvc_as_ivc
+boolean
+Optional
+Defaults to false
+Deprecated
+If true, we won't use PVC version of the voice for the generation but the IVC version. This is a temporary workaround for higher latency in PVC versions.
+Response
+
+Streaming audio data
+Errors
+
+
+422
+Unprocessable Entity Error
+Was this page helpful?
+Yes
+Stream speech with timing
+POST
+
+https://api.elevenlabs.io
+/v1/text-to-speech/:voice_id/stream/with-timestamps
+POST
+/v1/text-to-speech/:voice_id/stream/with-timestamps
+
+
+Python
+
+from elevenlabs import ElevenLabs
+client = ElevenLabs(
+    api_key="YOUR_API_KEY",
+)
+response = client.text_to_speech.stream_with_timestamps(
+    voice_id="JBFqnCBsd6RMkjVDRZzb",
+    output_format="mp3_44100_128",
+    text="The first move is what sets everything in motion.",
+    model_id="eleven_multilingual_v2",
+)
+for chunk in response.data:
+    yield chunk
+Try it
+Converts text into speech using a voice of your choice and returns a stream of JSONs containing audio as a base64 encoded string together with information on when which character was spoken.
+Path parameters
+
+voice_id
+string
+Required
+ID of the voice to be used. Use the Get voices endpoint list all the available voices.
+Headers
+
+xi-api-key
+string
+Required
+Query parameters
+
+enable_logging
+boolean
+Optional
+Defaults to true
+When enable_logging is set to false zero retention mode will be used for the request. This will mean history features are unavailable for this request, including request stitching. Zero retention mode may only be used by enterprise customers.
+optimize_streaming_latency
+integer or null
+Optional
+Deprecated
+You can turn on latency optimizations at some cost of quality. The best possible final latency varies by model. Possible values: 0 - default mode (no latency optimizations) 1 - normal latency optimizations (about 50% of possible latency improvement of option 3) 2 - strong latency optimizations (about 75% of possible latency improvement of option 3) 3 - max latency optimizations 4 - max latency optimizations, but also with text normalizer turned off for even more latency savings (best latency, but can mispronounce eg numbers and dates).
+
+Defaults to None.
+output_format
+enum
+Optional
+Defaults to mp3_44100_128
+Output format of the generated audio. Formatted as codec_sample_rate_bitrate. So an mp3 with 22.05kHz sample rate at 32kbs is represented as mp3_22050_32. MP3 with 192kbps bitrate requires you to be subscribed to Creator tier or above. PCM with 44.1kHz sample rate requires you to be subscribed to Pro tier or above. Note that the μ-law format (sometimes written mu-law, often approximated as u-law) is commonly used for Twilio audio inputs.
+
+Show 19 enum values
+Request
+
+This endpoint expects an object.
+text
+string
+Required
+The text that will get converted into speech.
+model_id
+string
+Optional
+Defaults to eleven_multilingual_v2
+Identifier of the model that will be used, you can query them using GET /v1/models. The model needs to have support for text to speech, you can check this using the can_do_text_to_speech property.
+language_code
+string or null
+Optional
+Language code (ISO 639-1) used to enforce a language for the model. Currently only Turbo v2.5 and Flash v2.5 support language enforcement. For other models, an error will be returned if language code is provided.
+voice_settings
+object or null
+Optional
+Voice settings overriding stored settings for the given voice. They are applied only on the given request.
+
+Show 5 properties
+pronunciation_dictionary_locators
+list of objects or null
+Optional
+A list of pronunciation dictionary locators (id, version_id) to be applied to the text. They will be applied in order. You may have up to 3 locators per request
+
+Show 2 properties
+seed
+integer or null
+Optional
+If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. Determinism is not guaranteed. Must be integer between 0 and 4294967295.
+previous_text
+string or null
+Optional
+The text that came before the text of the current request. Can be used to improve the speech's continuity when concatenating together multiple generations or to influence the speech's continuity in the current generation.
+next_text
+string or null
+Optional
+The text that comes after the text of the current request. Can be used to improve the speech's continuity when concatenating together multiple generations or to influence the speech's continuity in the current generation.
+previous_request_ids
+list of strings or null
+Optional
+A list of request_id of the samples that were generated before this generation. Can be used to improve the speech’s continuity when splitting up a large task into multiple requests. The results will be best when the same model is used across the generations. In case both previous_text and previous_request_ids is send, previous_text will be ignored. A maximum of 3 request_ids can be send.
+next_request_ids
+list of strings or null
+Optional
+A list of request_id of the samples that come after this generation. next_request_ids is especially useful for maintaining the speech’s continuity when regenerating a sample that has had some audio quality issues. For example, if you have generated 3 speech clips, and you want to improve clip 2, passing the request id of clip 3 as a next_request_id (and that of clip 1 as a previous_request_id) will help maintain natural flow in the combined speech. The results will be best when the same model is used across the generations. In case both next_text and next_request_ids is send, next_text will be ignored. A maximum of 3 request_ids can be send.
+apply_text_normalization
+enum
+Optional
+Defaults to auto
+This parameter controls text normalization with three modes: ‘auto’, ‘on’, and ‘off’. When set to ‘auto’, the system will automatically decide whether to apply text normalization (e.g., spelling out numbers). With ‘on’, text normalization will always be applied, while with ‘off’, it will be skipped. Cannot be turned on for ‘eleven_turbo_v2_5’ or ‘eleven_flash_v2_5’ models.
+Allowed values:
+auto
+on
+off
+apply_language_text_normalization
+boolean
+Optional
+Defaults to false
+This parameter controls language text normalization. This helps with proper pronunciation of text in some supported languages. WARNING: This parameter can heavily increase the latency of the request. Currently only supported for Japanese.
+use_pvc_as_ivc
+boolean
+Optional
+Defaults to false
+Deprecated
+If true, we won't use PVC version of the voice for the generation but the IVC version. This is a temporary workaround for higher latency in PVC versions.
+Response
+
+Stream of transcription chunks
+audio_base64
+string
+Base64 encoded audio data
+alignment
+object or null
+Timestamp information for each character in the original text
+
+Show 3 properties
+normalized_alignment
+object or null
+Timestamp information for each character in the normalized text
+
+Show 3 properties
+
+
+
+ENDPOINTS
+Voices
+List voices
+GET
+
+https://api.elevenlabs.io
+/v2/voices
+GET
+/v2/voices
+
+
+Python
+
+from elevenlabs import ElevenLabs
+client = ElevenLabs(
+    api_key="YOUR_API_KEY",
+)
+client.voices.search(
+    include_total_count=True,
+)
+Try it
+
+200
+Retrieved
+
+{
+  "voices": [
+    {
+      "voice_id": "foo",
+      "name": "foo",
+      "samples": [
+        {
+          "sample_id": "foo",
+          "file_name": "foo",
+          "mime_type": "foo",
+          "size_bytes": 42,
+          "hash": "foo",
+          "duration_secs": 42,
+          "remove_background_noise": true,
+          "has_isolated_audio": true,
+          "has_isolated_audio_preview": true,
+          "speaker_separation": {
+            "voice_id": "foo",
+            "sample_id": "foo",
+            "status": "not_started",
+            "speakers": {},
+            "selected_speaker_ids": [
+              "foo"
+            ]
+          },
+          "trim_start": 42,
+          "trim_end": 42
+        }
+      ],
+      "category": "generated",
+      "fine_tuning": {
+        "is_allowed_to_fine_tune": true,
+        "state": {},
+        "verification_failures": [
+          "foo"
+        ],
+        "verification_attempts_count": 42,
+        "manual_verification_requested": true,
+        "language": "foo",
+        "progress": {},
+        "message": {},
+        "dataset_duration_seconds": 42,
+        "verification_attempts": [
+          {
+            "text": "foo",
+            "date_unix": 42,
+            "accepted": true,
+            "similarity": 42,
+            "levenshtein_distance": 42,
+            "recording": {
+              "recording_id": "foo",
+              "mime_type": "foo",
+              "size_bytes": 42,
+              "upload_date_unix": 42,
+              "transcription": "foo"
+            }
+          }
+        ],
+        "slice_ids": [
+          "foo"
+        ],
+        "manual_verification": {
+          "extra_text": "foo",
+          "request_time_unix": 42,
+          "files": [
+            {
+              "file_id": "foo",
+              "file_name": "foo",
+              "mime_type": "foo",
+              "size_bytes": 42,
+              "upload_date_unix": 42
+            }
+          ]
+        },
+        "max_verification_attempts": 42,
+        "next_max_verification_attempts_reset_unix_ms": 42,
+        "finetuning_state": null
+      },
+      "labels": {},
+      "description": "foo",
+      "preview_url": "foo",
+      "available_for_tiers": [
+        "foo"
+      ],
+      "settings": {
+        "stability": 42,
+        "use_speaker_boost": true,
+        "similarity_boost": 42,
+        "style": 42,
+        "speed": 42
+      },
+      "sharing": {
+        "status": "enabled",
+        "history_item_sample_id": "foo",
+        "date_unix": 42,
+        "whitelisted_emails": [
+          "foo"
+        ],
+        "public_owner_id": "foo",
+        "original_voice_id": "foo",
+        "financial_rewards_enabled": true,
+        "free_users_allowed": true,
+        "live_moderation_enabled": true,
+        "rate": 42,
+        "fiat_rate": 42,
+        "notice_period": 42,
+        "disable_at_unix": 42,
+        "voice_mixing_allowed": true,
+        "featured": true,
+        "category": "generated",
+        "reader_app_enabled": true,
+        "image_url": "foo",
+        "ban_reason": "foo",
+        "liked_by_count": 42,
+        "cloned_by_count": 42,
+        "name": "foo",
+        "description": "foo",
+        "labels": {},
+        "review_status": "not_requested",
+        "review_message": "foo",
+        "enabled_in_library": true,
+        "instagram_username": "foo",
+        "twitter_username": "foo",
+        "youtube_username": "foo",
+        "tiktok_username": "foo",
+        "moderation_check": {
+          "date_checked_unix": 42,
+          "name_value": "foo",
+          "name_check": true,
+          "description_value": "foo",
+          "description_check": true,
+          "sample_ids": [
+            "foo"
+          ],
+          "sample_checks": [
+            42
+          ],
+          "captcha_ids": [
+            "foo"
+          ],
+          "captcha_checks": [
+            42
+          ]
+        },
+        "reader_restricted_on": [
+          {
+            "resource_type": "read",
+            "resource_id": "foo"
+          }
+        ]
+      },
+      "high_quality_base_model_ids": [
+        "foo"
+      ],
+      "verified_languages": [
+        {
+          "language": "foo",
+          "model_id": "foo",
+          "accent": "foo",
+          "locale": "foo",
+          "preview_url": "foo"
+        }
+      ],
+      "safety_control": "NONE",
+      "voice_verification": {
+        "requires_verification": true,
+        "is_verified": true,
+        "verification_failures": [
+          "foo"
+        ],
+        "verification_attempts_count": 42,
+        "language": "foo",
+        "verification_attempts": [
+          {
+            "text": "foo",
+            "date_unix": 42,
+            "accepted": true,
+            "similarity": 42,
+            "levenshtein_distance": 42,
+            "recording": {
+              "recording_id": "foo",
+              "mime_type": "foo",
+              "size_bytes": 42,
+              "upload_date_unix": 42,
+              "transcription": "foo"
+            }
+          }
+        ]
+      },
+      "permission_on_resource": "foo",
+      "is_owner": true,
+      "is_legacy": false,
+      "is_mixed": false,
+      "created_at_unix": 42
+    }
+  ],
+  "has_more": true,
+  "total_count": 42,
+  "next_page_token": "foo"
+}
+Gets a list of all available voices for a user with search, filtering and pagination.
+Headers
+
+xi-api-key
+string
+Required
+Query parameters
+
+next_page_token
+string or null
+Optional
+The next page token to use for pagination. Returned from the previous request.
+page_size
+integer
+Optional
+Defaults to 10
+How many voices to return at maximum. Can not exceed 100, defaults to 10. Page 0 may include more voices due to default voices being included.
+search
+string or null
+Optional
+Search term to filter voices by. Searches in name, description, labels, category.
+sort
+string or null
+Optional
+Which field to sort by, one of ‘created_at_unix’ or ‘name’. ‘created_at_unix’ may not be available for older voices.
+sort_direction
+string or null
+Optional
+Which direction to sort the voices in. 'asc' or 'desc'.
+voice_type
+string or null
+Optional
+Type of the voice to filter by. One of ‘personal’, ‘community’, ‘default’, ‘workspace’, ‘non-default’. ‘non-default’ is equal to all but ‘default’.
+category
+string or null
+Optional
+Category of the voice to filter by. One of 'premade', 'cloned', 'generated', 'professional'
+fine_tuning_state
+string or null
+Optional
+State of the voice’s fine tuning to filter by. Applicable only to professional voices clones. One of ‘draft’, ‘not_verified’, ‘not_started’, ‘queued’, ‘fine_tuning’, ‘fine_tuned’, ‘failed’, ‘delayed’
+collection_id
+string or null
+Optional
+Collection ID to filter voices by.
+include_total_count
+boolean
+Optional
+Defaults to true
+Whether to include the total count of voices found in the response. Incurs a performance cost.
+voice_ids
+list of strings or null
+Optional
+Voice IDs to lookup by. Maximum 100 voice IDs.
+Response
+
+Successful Response
+voices
+list of objects
+
+Show 20 properties
+has_more
+boolean
+total_count
+integer
+next_page_token
+string or null
+Errors
+
+
+422
+Unprocessable Entity Error
+Was this page helpful?
+Yes
+No
+Previous
+Get voice
+Next
+Built with
+
+
+ENDPOINTS
+Voices
+Get voice
+GET
+
+https://api.elevenlabs.io
+/v1/voices/:voice_id
+GET
+/v1/voices/:voice_id
+
+
+Python
+
+from elevenlabs import ElevenLabs
+client = ElevenLabs(
+    api_key="YOUR_API_KEY",
+)
+client.voices.get(
+    voice_id="21m00Tcm4TlvDq8ikWAM",
+)
+Try it
+
+200
+Retrieved
+
+{
+  "voice_id": "21m00Tcm4TlvDq8ikWAM",
+  "name": "Rachel",
+  "category": "professional",
+  "fine_tuning": {
+    "is_allowed_to_fine_tune": true,
+    "state": {
+      "eleven_multilingual_v2": "fine_tuned"
+    },
+    "verification_failures": [],
+    "verification_attempts_count": 2,
+    "manual_verification_requested": false
+  },
+  "labels": {
+    "accent": "American",
+    "age": "middle-aged",
+    "description": "expressive",
+    "gender": "female",
+    "use_case": "social media"
+  },
+  "description": "A warm, expressive voice with a touch of humor.",
+  "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/9BWtsMINqrJLrRacOk9x/405766b8-1f4e-4d3c-aba1-6f25333823ec.mp3",
+  "available_for_tiers": [
+    "creator",
+    "enterprise"
+  ],
+  "settings": {
+    "stability": 1,
+    "use_speaker_boost": true,
+    "similarity_boost": 1,
+    "style": 0,
+    "speed": 1
+  },
+  "sharing": {
+    "status": "enabled",
+    "history_item_sample_id": "DCwhRBWXzGAHq8TQ4Fs18",
+    "date_unix": 1714204800,
+    "whitelisted_emails": [
+      "example@example.com"
+    ],
+    "public_owner_id": "DCwhRBWXzGAHq8TQ4Fs18",
+    "original_voice_id": "DCwhRBWXzGAHq8TQ4Fs18",
+    "financial_rewards_enabled": true,
+    "free_users_allowed": true,
+    "live_moderation_enabled": true,
+    "rate": 0.05,
+    "notice_period": 30,
+    "disable_at_unix": 1714204800,
+    "voice_mixing_allowed": false,
+    "featured": true,
+    "category": "professional",
+    "reader_app_enabled": true,
+    "liked_by_count": 100,
+    "cloned_by_count": 50,
+    "name": "Rachel",
+    "description": "A female voice with a soft and friendly tone.",
+    "labels": {
+      "accent": "American",
+      "gender": "female"
+    },
+    "review_status": "allowed",
+    "enabled_in_library": true,
+    "moderation_check": {
+      "date_checked_unix": 1714204800,
+      "name_value": "Rachel",
+      "name_check": true,
+      "description_value": "A female voice with a soft and friendly tone.",
+      "description_check": true,
+      "sample_ids": [
+        "sample1",
+        "sample2"
+      ],
+      "sample_checks": [
+        0.95,
+        0.98
+      ],
+      "captcha_ids": [
+        "captcha1",
+        "captcha2"
+      ],
+      "captcha_checks": [
+        0.95,
+        0.98
+      ]
+    },
+    "reader_restricted_on": [
+      {
+        "resource_type": "read",
+        "resource_id": "FCwhRBWXzGAHq8TQ4Fs18"
+      }
+    ]
+  },
+  "high_quality_base_model_ids": [
+    "eleven_v2_flash",
+    "eleven_flash_v2",
+    "eleven_turbo_v2_5",
+    "eleven_multilingual_v2",
+    "eleven_v2_5_flash",
+    "eleven_flash_v2_5",
+    "eleven_turbo_v2"
+  ],
+  "verified_languages": [
+    {
+      "language": "en",
+      "model_id": "eleven_multilingual_v2",
+      "accent": "american",
+      "locale": "en-US",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/9BWtsMINqrJLrRacOk9x/405766b8-1f4e-4d3c-aba1-6f25333823ec.mp3"
+    }
+  ],
+  "voice_verification": {
+    "requires_verification": false,
+    "is_verified": true,
+    "verification_failures": [],
+    "verification_attempts_count": 0,
+    "language": "en",
+    "verification_attempts": [
+      {
+        "text": "Hello, how are you?",
+        "date_unix": 1714204800,
+        "accepted": true,
+        "similarity": 0.95,
+        "levenshtein_distance": 2,
+        "recording": {
+          "recording_id": "CwhRBWXzGAHq8TQ4Fs17",
+          "mime_type": "audio/mpeg",
+          "size_bytes": 1000000,
+          "upload_date_unix": 1714204800,
+          "transcription": "Hello, how are you?"
+        }
+      }
+    ]
+  },
+  "is_owner": false,
+  "is_legacy": false,
+  "is_mixed": false
+}
+Returns metadata about a specific voice.
+Path parameters
+
+voice_id
+string
+Required
+ID of the voice to be used. You can use the Get voices endpoint list all the available voices.
+Headers
+
+xi-api-key
+string
+Required
+Query parameters
+
+with_settings
+boolean
+Optional
+Defaults to true
+Deprecated
+This parameter is now deprecated. It is ignored and will be removed in a future version.
+Response
+
+Successful Response
+voice_id
+string
+The ID of the voice.
+name
+string or null
+The name of the voice.
+samples
+list of objects or null
+List of samples associated with the voice.
+
+Show 12 properties
+category
+enum or null
+The category of the voice.
+
+Show 6 enum values
+fine_tuning
+object or null
+Fine-tuning information for the voice.
+
+Show 15 properties
+labels
+map from strings to strings or null
+Labels associated with the voice.
+description
+string or null
+The description of the voice.
+preview_url
+string or null
+The preview URL of the voice.
+available_for_tiers
+list of strings or null
+The tiers the voice is available for.
+settings
+object or null
+The settings of the voice.
+
+Show 5 properties
+sharing
+object or null
+The sharing information of the voice.
+
+Show 33 properties
+high_quality_base_model_ids
+list of strings or null
+The base model IDs for high-quality voices.
+verified_languages
+list of objects or null
+The verified languages of the voice.
+
+Show 5 properties
+safety_control
+enum or null
+The safety controls of the voice.
+Allowed values:
+NONE
+BAN
+CAPTCHA
+ENTERPRISE_BAN
+ENTERPRISE_CAPTCHA
+voice_verification
+object or null
+The voice verification of the voice.
+
+Show 6 properties
+permission_on_resource
+string or null
+The permission on the resource of the voice.
+is_owner
+boolean or null
+Whether the voice is owned by the user.
+is_legacy
+boolean or null
+Defaults to false
+Whether the voice is legacy.
+is_mixed
+boolean or null
+Defaults to false
+Whether the voice is mixed.
+created_at_unix
+integer or null
+The creation time of the voice in Unix time.
+Errors
+
+
+422
+Unprocessable Entity Error
+Was this page helpful?
+Yes
+No
+Previous
+Delete voice
+Next
+Built with

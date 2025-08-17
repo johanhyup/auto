@@ -1,0 +1,50 @@
+[app]
+hide_config = false
+llm_provider = "openai"
+pollinations_api_key = "${POLLINATIONS_API_KEY:}"
+pollinations_base_url = "https://pollinations.ai/api/v1"
+pollinations_model_name = "openai-fast"
+openai_api_key = "${OPENAI_API_KEY:}"
+openai_base_url = "https://api.openai.com/v1"
+openai_model_name = "gpt-4o-mini"
+elevenlabs_api_key = "${ELEVENLABS_API_KEY:}"
+moonshot_base_url = "https://api.moonshot.cn/v1"
+moonshot_model_name = "moonshot-v1-8k"
+g4f_model_name = "gpt-3.5-turbo"
+azure_model_name = "gpt-35-turbo"
+azure_api_version = "2024-02-15-preview"
+gemini_model_name = "gemini-1.0-pro"
+qwen_model_name = "qwen-max"
+deepseek_base_url = "https://api.deepseek.com"
+deepseek_model_name = "deepseek-chat"
+subtitle_provider = "edge"
+enable_redis = false
+redis_host = "localhost"
+redis_port = 6379
+local_media_dir = ""
+audio_codec = "aac"
+news_provider = "auto"
+news_api_key = "${NEWS_API_KEY:}"
+use_market_data = true
+coingecko_base_url = "https://api.coingecko.com/api/v3"
+script_style = "analysis_v1"
+target_duration_s = 50
+
+[whisper]
+model_size = "large-v3"
+device = "CPU"
+compute_type = "int8"
+
+
+[azure]
+
+[siliconflow]
+
+[paths]
+ffmpeg            = "bin/ffmpeg"
+local_media_dir   = "local_media"
+storage_tasks_dir = "storage/tasks"
+models_dir        = "models"
+fonts_dir         = "resource/fonts"
+songs_dir         = "resource/songs"
+i18n_dir          = "webui/i18n"

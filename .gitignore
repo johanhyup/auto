@@ -1,0 +1,68 @@
+# Media via Git LFS (use only for files you intend to keep in repo)
+*.mp3 filter=lfs diff=lfs merge=lfs -text
+*.wav filter=lfs diff=lfs merge=lfs -text
+*.flac filter=lfs diff=lfs merge=lfs -text
+*.m4a filter=lfs diff=lfs merge=lfs -text
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.mov filter=lfs diff=lfs merge=lfs -text
+*.mkv filter=lfs diff=lfs merge=lfs -text
+*.srt filter=lfs diff=lfs merge=lfs -text
+
+# ----------------------------------------
+# OS & IDE
+# ----------------------------------------
+.DS_Store
+.vscode/
+.idea/
+
+# ----------------------------------------
+# Python
+# ----------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+
+# 가상환경
+venv/
+.venv/
+.env
+.env.*
+
+# ----------------------------------------
+# Logs
+# ----------------------------------------
+logs/
+*.log
+
+# ----------------------------------------
+# 데이터 / 산출물
+# ----------------------------------------
+local_media/
+storage/tasks/
+cache_videos/
+*.db
+*.sqlite3
+
+# ----------------------------------------
+# 모델 등 대용량
+# ----------------------------------------
+models/
+resource/fonts/
+resource/songs/
+
+# ----------------------------------------
+# 기타
+# ----------------------------------------
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.keystore
+*.jks
+*credentials*.json
+serviceAccount*.json
